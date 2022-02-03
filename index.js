@@ -27,9 +27,9 @@ app.post('/sign-up', async (req, res) => {
   const user = req.body;
 
   const userSchema = joi.object({
-    name: joi.string().required(),
+    name: joi.string().alphanum().min(3).max(10).required(),
     email: joi.string().email().required(),
-    password: joi.string().required()
+    password: joi.string().pattern(/^[a-zA-Z0-9]{5,30}$/).required()
   });
   const validation = userSchema.validate(user);
   if(validation.error){
@@ -38,12 +38,25 @@ app.post('/sign-up', async (req, res) => {
   }
 
   try {
-    const passwordHashed = bcrypt.hashSync(user.password, 10);
-    const userHashed = { ...user, password: passwordHashed };
+    const users = await db.collection("users").find({}).toArray();
 
-    await db.collection("users").insertOne(userHashed);
+    const usersNames = users.map(user => user.name);
+    const usersEmails = users.map(user => user.email);
 
-    res.sendStatus(201);    
+    const searchUserNames = usersNames.find(userName => userName === user.name);
+    const searchUserEmails = usersEmails.find(userEmail => userEmail === user.email);
+
+    if(searchUserNames === undefined && searchUserEmails === undefined){
+      const passwordHashed = bcrypt.hashSync(user.password, 10);
+      const userHashed = { ...user, password: passwordHashed };
+  
+      await db.collection("users").insertOne(userHashed);
+  
+      res.sendStatus(201); 
+    }else{
+      res.sendStatus(409);
+      return;
+    }
   } catch (error) {
     console.log(error);
     res.sendStatus(500);
@@ -58,7 +71,7 @@ app.post('/sign-in', async (req, res) => {
 
   const loginSchema = joi.object({
     email: joi.string().email().required(),
-    password: joi.string().required()
+    password: joi.string().pattern(/^[a-zA-Z0-9]{5,30}$/).required()
   });
   const validation = loginSchema.validate({ email, password });
   if(validation.error){
