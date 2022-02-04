@@ -1,5 +1,5 @@
 import express, { json } from "express";
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient } from "mongodb";
 import cors from 'cors';
 import joi from 'joi';
 import bcrypt from 'bcrypt';
@@ -92,7 +92,7 @@ app.post('/sign-in', async (req, res) => {
 
       await db.collection("sessions").insertOne({ token, userId: user._id });
 
-      res.send(token);
+      res.send({ token, name: user.name });
       return;
     }
 
@@ -121,8 +121,86 @@ app.get('/balance', async (req, res) => {
       return;
     }
   
-    const movements = await db.collection("movements").find({ userId: session._id }).toArray();
+    const movements = await db.collection("movements").find({ userId: session.userId }).toArray();
     res.send(movements);
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+
+
+/* Input Route */
+app.post('/input', async (req, res) => {
+  const input = req.body;
+  const authorization = req.headers.authorization;
+  const token = authorization?.replace('Bearer ', '');
+  if(!token){
+    res.sendStatus(401);
+    return;
+  }
+
+  const inputSchema = joi.object({
+    value: joi.string().max(10).required(),
+    description: joi.string().min(5).max(20).required(),
+    date: joi.string().max(5).required(),
+    isInput: joi.boolean().required()
+  });
+  const validation = inputSchema.validate(input);
+  if(validation.error){
+    res.status(422).send(validation.error.details.map(error => error.message));
+    return;
+  }
+
+  try {
+    const session = await db.collection("sessions").findOne({ token });
+    if(!session){
+      res.sendStatus(401);
+      return;
+    }
+
+    await db.collection("movements").insertOne({ ...input, userId: session.userId });
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+
+
+/* Output Route */
+app.post('/output', async (req, res) => {
+  const output = req.body;
+  const authorization = req.headers.authorization;
+  const token = authorization?.replace('Bearer ', '');
+  if(!token){
+    res.sendStatus(401);
+    return;
+  }
+
+  const outputSchema = joi.object({
+    value: joi.string().max(10).required(),
+    description: joi.string().min(5).max(20).required(),
+    date: joi.string().max(5).required(),
+    isInput: joi.boolean().required()
+  });
+  const validation = outputSchema.validate(output);
+  if(validation.error){
+    res.status(422).send(validation.error.details.map(error => error.message));
+    return;
+  }
+
+  try {
+    const session = await db.collection("sessions").findOne({ token });
+    if(!session){
+      res.sendStatus(401);
+      return;
+    }
+
+    await db.collection("movements").insertOne({ ...output, userId: session.userId });
+    res.sendStatus(200);
   } catch (error) {
     console.log(error);
     res.sendStatus(500);
