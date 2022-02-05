@@ -1,5 +1,5 @@
 import express, { json } from "express";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import cors from 'cors';
 import joi from 'joi';
 import bcrypt from 'bcrypt';
@@ -105,7 +105,7 @@ app.post('/sign-in', async (req, res) => {
 
 
 
-/* Balance Route */
+/* Balance Routes */
 app.get('/balance', async (req, res) => {
   const authorization = req.headers.authorization;
   const token = authorization?.replace('Bearer ', '');
@@ -123,6 +123,30 @@ app.get('/balance', async (req, res) => {
   
     const movements = await db.collection("movements").find({ userId: session.userId }).toArray();
     res.send(movements);
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);
+  }
+});
+
+app.delete('/balance/:idMovement', async (req, res) => {
+  const idMovement = req.params.idMovement;
+
+  try {
+    const searchedMoviment = await db.collection("movements").findOne({ _id: new ObjectId(idMovement) });
+    if(!searchedMoviment){
+      res.sendStatus(404);
+      return;
+    }
+
+    const searchedUser = await db.collection("users").findOne({ _id: searchedMoviment.userId });
+    if(!searchedUser){
+      res.sendStatus(401);
+      return;
+    }
+
+    await db.collection("movements").deleteOne({ _id: searchedMoviment._id });
+    res.sendStatus(200);
   } catch (error) {
     console.log(error);
     res.sendStatus(500);
