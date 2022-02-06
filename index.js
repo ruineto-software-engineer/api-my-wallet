@@ -165,60 +165,6 @@ app.delete('/balance/:idMovement', async (req, res) => {
   }
 });
 
-app.put('/balance/:idMovement', async (req, res) => {
-  const movement = req.body;
-  const idMovement = req.params.idMovement;
-  const authorization = req.headers.authorization;
-  const token = authorization?.replace('Bearer ', '');
-  if(!token){
-    res.sendStatus(401);
-    return;
-  }
-  
-  const movementSchema = joi.object({
-    value: joi.string().max(10).required(),
-    description: joi.string().min(5).max(20).required(),
-    date: joi.string().max(5).required(),
-    isInput: joi.boolean().required()
-  });
-  const validation = movementSchema.validate(movement);
-  if(validation.error){
-    res.status(422).send(validation.error.details.map(error => error.message));
-    return;
-  }
-
-  try {
-    const session = await db.collection("sessions").findOne({ token });
-    if(!session){
-      res.sendStatus(401);
-      return;
-    }
-
-    const searchedMoviment = await db.collection("movements").findOne({ _id: new ObjectId(idMovement) });
-    if(!searchedMoviment){
-      res.sendStatus(404);
-      return;
-    }
-
-    const searchedUser = await db.collection("users").findOne({ _id: searchedMoviment.userId });
-    if(!searchedUser){
-      res.sendStatus(401);
-      return;
-    }
-
-    const updatedMovement = { ...movement, userId: searchedUser._id }
-
-    await db.collection("movements").updateOne(
-      { _id: searchedMoviment._id },
-      { $set: updatedMovement }
-    );
-    res.sendStatus(201);
-  } catch (error) {
-    console.log(error);
-    res.sendStatus(500);    
-  }
-});
-
 
 
 /* Input Route */
@@ -299,7 +245,7 @@ app.post('/output', async (req, res) => {
 
 
 
-/* Update Route */
+/* Update Routes */
 app.get('/update/:idMovement', async (req, res) => {
   const idMovement = req.params.idMovement;
   const authorization = req.headers.authorization;
@@ -326,6 +272,60 @@ app.get('/update/:idMovement', async (req, res) => {
   } catch (error) {
     console.log(error);
     res.sendStatus(500);
+  }
+});
+
+app.put('/update/:idMovement', async (req, res) => {
+  const movement = req.body;
+  const idMovement = req.params.idMovement;
+  const authorization = req.headers.authorization;
+  const token = authorization?.replace('Bearer ', '');
+  if(!token){
+    res.sendStatus(401);
+    return;
+  }
+  
+  const movementSchema = joi.object({
+    value: joi.string().max(10).required(),
+    description: joi.string().min(5).max(20).required(),
+    date: joi.string().max(5).required(),
+    isInput: joi.boolean().required()
+  });
+  const validation = movementSchema.validate(movement);
+  if(validation.error){
+    res.status(422).send(validation.error.details.map(error => error.message));
+    return;
+  }
+
+  try {
+    const session = await db.collection("sessions").findOne({ token });
+    if(!session){
+      res.sendStatus(401);
+      return;
+    }
+
+    const searchedMoviment = await db.collection("movements").findOne({ _id: new ObjectId(idMovement) });
+    if(!searchedMoviment){
+      res.sendStatus(404);
+      return;
+    }
+
+    const searchedUser = await db.collection("users").findOne({ _id: searchedMoviment.userId });
+    if(!searchedUser){
+      res.sendStatus(401);
+      return;
+    }
+
+    const updatedMovement = { ...movement, userId: searchedUser._id }
+
+    await db.collection("movements").updateOne(
+      { _id: searchedMoviment._id },
+      { $set: updatedMovement }
+    );
+    res.sendStatus(201);
+  } catch (error) {
+    console.log(error);
+    res.sendStatus(500);    
   }
 });
 
