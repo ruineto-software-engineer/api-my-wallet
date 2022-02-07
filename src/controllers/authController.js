@@ -1,21 +1,9 @@
-import joi from 'joi';
 import bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
 import db from "../db.js";
 
 export async function signIn(req, res) {
   const user = req.body;
-
-  const userSchema = joi.object({
-    name: joi.string().alphanum().min(3).max(10).required(),
-    email: joi.string().email().required(),
-    password: joi.string().pattern(/^[a-zA-Z0-9]{5,30}$/).required()
-  });
-  const validation = userSchema.validate(user);
-  if(validation.error){
-    res.status(422).send(validation.error.details.map(error => error.message));
-    return;
-  }
 
   try {
     const users = await db.collection("users").find({}).toArray();
@@ -45,16 +33,6 @@ export async function signIn(req, res) {
 
 export async function signUp(req, res) {
   const { email, password } = req.body;
-
-  const loginSchema = joi.object({
-    email: joi.string().email().required(),
-    password: joi.string().pattern(/^[a-zA-Z0-9]{5,30}$/).required()
-  });
-  const validation = loginSchema.validate({ email, password });
-  if(validation.error){
-    res.status(422).send(validation.error.details.map(error => error.message));
-    return;
-  }
 
   try {
     const user = await db.collection("users").findOne({ email });

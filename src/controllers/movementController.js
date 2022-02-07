@@ -1,5 +1,4 @@
 import { ObjectId } from "mongodb";
-import joi from 'joi';
 import db from "../db.js";
 
 export async function getMovements(req, res) {
@@ -63,18 +62,6 @@ export async function createMovement(req, res) {
     return;
   }
 
-  const movementSchema = joi.object({
-    value: joi.string().max(10).required(),
-    description: joi.string().min(5).max(20).required(),
-    date: joi.string().max(5).required(),
-    isInput: joi.boolean().required()
-  });
-  const validation = movementSchema.validate(movement);
-  if(validation.error){
-    res.status(422).send(validation.error.details.map(error => error.message));
-    return;
-  }
-
   try {
     const session = await db.collection("sessions").findOne({ token });
     if(!session){
@@ -97,18 +84,6 @@ export async function updateMovement(req, res) {
   const token = authorization?.replace('Bearer ', '');
   if(!token){
     res.sendStatus(401);
-    return;
-  }
-  
-  const movementSchema = joi.object({
-    value: joi.string().max(10).required(),
-    description: joi.string().min(5).max(20).required(),
-    date: joi.string().max(5).required(),
-    isInput: joi.boolean().required()
-  });
-  const validation = movementSchema.validate(movement);
-  if(validation.error){
-    res.status(422).send(validation.error.details.map(error => error.message));
     return;
   }
 
