@@ -8,7 +8,6 @@ app.use(json());
 
 app.use(router);
 
-/* Listen - Running app in http://localhost:5000 */
-app.listen(5000, () => {
-  console.log('Running app in http://localhost:5000');
+app.listen(process.env.PORT, () => {
+  console.log(`Server is running on the port ${process.env.PORT}`);
 });
