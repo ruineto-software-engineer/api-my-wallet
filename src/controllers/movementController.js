@@ -2,21 +2,10 @@ import { ObjectId } from "mongodb";
 import db from "../db.js";
 
 export async function getMovements(req, res) {
-  const authorization = req.headers.authorization;
-  const token = authorization?.replace('Bearer ', '');
-  if(!token){
-    res.sendStatus(401);
-    return;
-  }
+  const user = res.locals.user;
 
-  try {
-    const session = await db.collection("sessions").findOne({ token });
-    if(!session){
-      res.sendStatus(401);
-      return;
-    }
-  
-    const movements = await db.collection("movements").find({ userId: session.userId }).toArray();
+  try {  
+    const movements = await db.collection("movements").find({ userId: user._id }).toArray();
     res.send(movements);
   } catch (error) {
     console.log(error);
@@ -26,20 +15,8 @@ export async function getMovements(req, res) {
 
 export async function getMovement(req, res) {
   const idMovement = req.params.idMovement;
-  const authorization = req.headers.authorization;
-  const token = authorization?.replace('Bearer ', '');
-  if(!token){
-    res.sendStatus(401);
-    return;
-  }
 
   try {
-    const session = await db.collection("sessions").findOne({ token });
-    if(!session){
-      res.sendStatus(401);
-      return;
-    }
-
     const searchedMoviment = await db.collection("movements").findOne({ _id: new ObjectId(idMovement) });
     if(!searchedMoviment){
       res.sendStatus(404);
@@ -54,22 +31,11 @@ export async function getMovement(req, res) {
 }
 
 export async function createMovement(req, res) {
+  const user = res.locals.user;
   const movement = req.body;
-  const authorization = req.headers.authorization;
-  const token = authorization?.replace('Bearer ', '');
-  if(!token){
-    res.sendStatus(401);
-    return;
-  }
 
   try {
-    const session = await db.collection("sessions").findOne({ token });
-    if(!session){
-      res.sendStatus(401);
-      return;
-    }
-
-    await db.collection("movements").insertOne({ ...movement, userId: session.userId });
+    await db.collection("movements").insertOne({ ...movement, userId: user._id });
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
@@ -80,20 +46,8 @@ export async function createMovement(req, res) {
 export async function updateMovement(req, res) {
   const movement = req.body;
   const idMovement = req.params.idMovement;
-  const authorization = req.headers.authorization;
-  const token = authorization?.replace('Bearer ', '');
-  if(!token){
-    res.sendStatus(401);
-    return;
-  }
 
   try {
-    const session = await db.collection("sessions").findOne({ token });
-    if(!session){
-      res.sendStatus(401);
-      return;
-    }
-
     const searchedMoviment = await db.collection("movements").findOne({ _id: new ObjectId(idMovement) });
     if(!searchedMoviment){
       res.sendStatus(404);
@@ -121,20 +75,8 @@ export async function updateMovement(req, res) {
 
 export async function deleteMovement(req, res) {
   const idMovement = req.params.idMovement;
-  const authorization = req.headers.authorization;
-  const token = authorization?.replace('Bearer ', '');
-  if(!token){
-    res.sendStatus(401);
-    return;
-  }
 
   try {
-    const session = await db.collection("sessions").findOne({ token });
-    if(!session){
-      res.sendStatus(401);
-      return;
-    }
-
     const searchedMoviment = await db.collection("movements").findOne({ _id: new ObjectId(idMovement) });
     if(!searchedMoviment){
       res.sendStatus(404);
